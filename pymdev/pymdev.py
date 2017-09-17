@@ -18,8 +18,11 @@
 # Imports
 # -----------------------------------------------------------------
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import sys
-import StringIO
+import io
 import doctest
 
 from Pymacs import lisp
@@ -45,7 +48,7 @@ _py_globals = {
 # If the autoimp module is installed, use it to import every module
 # into the _py_globals namespace; otherwise, don't worry about it.
 try:
-     exec "from autoimp import *" in _py_globals
+     exec("from autoimp import *", _py_globals)
 except ImportError:
      pass
 
@@ -161,7 +164,7 @@ def exec_and_doctest_region():
 
      code_str = get_region()
 
-     temp_stdout = StringIO.StringIO()
+     temp_stdout = io.StringIO()
      tempLocals = {}
      old_stdout = sys.stdout
      old_stderr = sys.stderr
@@ -169,18 +172,18 @@ def exec_and_doctest_region():
      sys.stderr = temp_stdout
 
      try:
-          exec code_str in _py_globals, tempLocals
+          exec(code_str, _py_globals, tempLocals)
      finally:
           sys.stdout = old_stdout
           sys.stderr = old_stderr
 
      doctests = []
      finder = doctest.DocTestFinder()
-     for obj in tempLocals.values():
+     for obj in list(tempLocals.values()):
           if hasattr( obj, "__name__" ):
                doctests.extend( finder.find(obj) )
 
-     buf = StringIO.StringIO()
+     buf = io.StringIO()
      runner = doctest.DocTestRunner(verbose=1)
 
      for test in doctests:
@@ -226,7 +229,7 @@ def doctest_region():
           0
           )
 
-     buf = StringIO.StringIO()
+     buf = io.StringIO()
      runner = doctest.DocTestRunner(verbose=1)
      runner.run(test, out=buf.write)
 
@@ -272,8 +275,8 @@ def help_on_region():
           return
 
      import types
-     if isinstance(obj, types.IntType) or \
-        isinstance(obj, types.FloatType):
+     if isinstance(obj, int) or \
+        isinstance(obj, float):
           lisp.message("Target is a number.")
           return
 
@@ -314,7 +317,7 @@ def help_on_region():
                lisp.insert(m)
           else:
                out = "Target is a dictionary.  Keys are:\n\n"
-               out += list_items(obj.keys())
+               out += list_items(list(obj.keys()))
                lisp.message(out)
           return
      elif isinstance(obj, list) or isinstance(obj, tuple):
